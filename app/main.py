@@ -152,14 +152,16 @@ async def lifespan(app: FastAPI):
                 await asyncio.gather(*tasks)
                 logger.info("Map data fully loaded.")
 
-                # Weather + race control fetched after map (lower priority)
-                weather, race_control = await asyncio.gather(
+                # Weather + race control + pit stops fetched after map (lower priority)
+                weather, race_control, pit_stops = await asyncio.gather(
                     openf1_client.get_weather(session["session_key"]),
                     openf1_client.get_race_control(session["session_key"]),
+                    openf1_client.get_pit_stops(session["session_key"]),
                 )
                 if weather:
                     race_state.weather = latest_weather(weather)
                 race_state.race_control = race_control
+                race_state.pit_stops = pit_stops
                 logger.info(
                     "Weather + race control loaded (%d messages).", len(race_control)
                 )

@@ -49,6 +49,7 @@ def timing_tower():
         "sectors": race_state.sectors_by_driver,
         "weather": race_state.weather,
         "race_control": race_state.race_control,
+        "pit_stops": race_state.pit_stops,
     }
 
 

@@ -37,7 +37,11 @@ async def poll_live_race():
                 openf1_client.get_locations(session_key, date_gte=recent),
             ]
             if fetch_slow:
-                coros += [openf1_client.get_stints(session_key), openf1_client.get_laps(session_key)]
+                coros += [
+                    openf1_client.get_stints(session_key),
+                    openf1_client.get_laps(session_key),
+                    openf1_client.get_pit_stops(session_key),
+                ]
             if fetch_rc:
                 coros.append(openf1_client.get_race_control(session_key))
             if fetch_weather:
@@ -50,9 +54,10 @@ async def poll_live_race():
             idx = 3
 
             if fetch_slow:
-                stints, laps = results[idx], results[idx + 1]
-                idx += 2
+                stints, laps, pit_stops = results[idx], results[idx + 1], results[idx + 2]
+                idx += 3
                 race_state.stints = stints
+                race_state.pit_stops = pit_stops
                 if laps:
                     valid_laps = [l for l in laps if not l.get("is_deleted")]
                     if valid_laps:

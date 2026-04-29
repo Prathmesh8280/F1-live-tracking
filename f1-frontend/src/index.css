@@ -1,21 +1,23 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg:           #0c0c0c;
-  --surface:      #161616;
-  --surface-alt:  #1e1e1e;
-  --border:       #2a2a2a;
-  --text:         #e8e8e8;
-  --text-dim:     #808080;
-  --red:          #e8002d;
-  --green:        #00d761;
-  --mono:         'Courier New', Courier, monospace;
+  --bg:            #0b0b0f;
+  --surface:       #13131a;
+  --surface-alt:   #1a1a23;
+  --border:        #2a2a38;
+  --text:          #f0f0f0;
+  --text-dim:      #888899;
+  --text-muted:    #55556a;
+  --red:           #e8002d;
+  --green:         #00d761;
+  --mono:          'JetBrains Mono', 'Courier New', monospace;
+  --font-display:  'Rajdhani', system-ui, sans-serif;
 }
 
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   font-size: 14px;
   line-height: 1.4;
   min-height: 100vh;
@@ -25,7 +27,9 @@ body {
 .app {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 0 1.25rem 3rem;
+  padding: 0 20px 16px;
+  display: flex;
+  flex-direction: column;
 }
 
 .status-screen {
@@ -44,11 +48,100 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.5rem 0 1.25rem;
-  border-bottom: 3px solid var(--red);
-  margin-bottom: 1.5rem;
+  padding: 0.75rem 0 0.6rem;
   gap: 1rem;
+  flex-shrink: 0;
 }
+
+.header-stripe {
+  display: block;
+  width: 100%;
+  height: 3px;
+  background: var(--red);
+  flex-shrink: 0;
+  margin-bottom: 8px;
+}
+
+/* ── Race control banner ──────────────────────────────────────────── */
+.race-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 7px 12px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.race-banner-badge {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  padding: 3px 9px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.race-banner-text {
+  flex: 1;
+  font-size: 0.76rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.race-banner-time {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  opacity: 0.65;
+  flex-shrink: 0;
+}
+
+.race-banner--yellow {
+  background: #2a1d00;
+  border: 1px solid #fbbf24;
+  color: #fde68a;
+}
+.race-banner--yellow .race-banner-badge { background: #fbbf24; color: #000; }
+
+.race-banner--red {
+  background: #2a0000;
+  border: 1px solid #ef4444;
+  color: #fca5a5;
+}
+.race-banner--red .race-banner-badge { background: #ef4444; color: #fff; }
+
+.race-banner--sc {
+  background: #2a1200;
+  border: 1px solid #fb923c;
+  color: #fed7aa;
+}
+.race-banner--sc .race-banner-badge { background: #fb923c; color: #000; }
+
+.race-banner--vsc {
+  background: #2a1200;
+  border: 1px solid #fdba74;
+  color: #fed7aa;
+}
+.race-banner--vsc .race-banner-badge { background: #fdba74; color: #000; }
+
+.race-banner--green {
+  background: #00160a;
+  border: 1px solid #34d399;
+  color: #6ee7b7;
+}
+.race-banner--green .race-banner-badge { background: #34d399; color: #000; }
+
+.race-banner--chequered {
+  background: #1a1a1a;
+  border: 1px solid #d4d4d4;
+  color: #e5e5e5;
+}
+.race-banner--chequered .race-banner-badge { background: #e5e5e5; color: #000; }
 
 .header-left {
   display: flex;
@@ -68,9 +161,10 @@ body {
 }
 
 .race-name {
-  font-size: 1.3rem;
+  font-family: var(--font-display);
+  font-size: 1.55rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #fff;
 }
@@ -83,9 +177,10 @@ body {
 }
 
 .lap-counter {
-  font-size: 0.82rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
   color: var(--text-dim);
 }
 
@@ -116,8 +211,9 @@ body {
   display: flex;
   align-items: center;
   gap: 1.25rem;
-  padding: 0.5rem 0 1rem;
+  padding: 0.3rem 0 0.4rem;
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .weather-item {
@@ -129,12 +225,19 @@ body {
   letter-spacing: 0.04em;
 }
 
-.weather-label {
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+.weather-icon-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
   color: var(--text-dim);
-  opacity: 0.6;
+}
+
+.weather-type-tag {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  line-height: 1;
 }
 
 .weather-value {
@@ -213,13 +316,42 @@ body {
 /* ── Main grid (map + tower) ──────────────────────────────────────── */
 .main-grid {
   display: grid;
-  grid-template-columns: 480px 1fr;
-  gap: 1.5rem;
+  grid-template-columns: clamp(300px, 40%, 540px) 1fr;
+  gap: 1rem;
   align-items: start;
 }
 
-@media (max-width: 960px) {
+@media (max-width: 860px) {
   .main-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Left panel (map + meta card) ────────────────────────────────── */
+.left-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.panel-meta {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* banner inside panel: remove its own border-radius + margin, fill edge-to-edge */
+.panel-meta .race-banner {
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  margin-bottom: 0;
+}
+
+.panel-meta .weather-strip {
+  padding: 8px 14px;
 }
 
 /* ── Track Map ────────────────────────────────────────────────────── */
@@ -228,8 +360,8 @@ body {
   border: 1px solid var(--border);
   border-radius: 6px;
   overflow: hidden;
-  position: sticky;
-  top: 1rem;
+  display: flex;
+  flex-direction: column;
 }
 
 .track-map-header {
@@ -237,14 +369,16 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  border-bottom: 1px solid var(--border);
+  background: #0d0d14;
+  border-bottom: 2px solid var(--red);
 }
 
 .track-map-title {
-  font-size: 0.68rem;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
-  color: var(--text-dim);
+  letter-spacing: 0.16em;
+  color: #ffffff;
 }
 
 .sector-legend {
@@ -292,7 +426,11 @@ body {
 }
 
 /* ── Timing Tower ─────────────────────────────────────────────────── */
-.timing-tower { width: 100%; }
+.timing-tower {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
 
 .table-wrap {
   overflow-x: auto;
@@ -306,15 +444,19 @@ body {
 }
 
 .timing-tower thead th {
-  background: var(--surface);
-  padding: 10px 14px;
+  background: #0d0d14;
+  padding: 8px 7px;
   text-align: left;
-  font-size: 0.68rem;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
-  color: var(--text-dim);
+  letter-spacing: 0.16em;
+  color: #ffffff;
   white-space: nowrap;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 2px solid var(--red);
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .no-data {
@@ -324,10 +466,11 @@ body {
 }
 
 .last-updated {
-  margin-top: 0.75rem;
-  font-size: 0.72rem;
+  margin-top: 0.3rem;
+  font-size: 0.68rem;
   color: var(--text-dim);
   text-align: right;
+  flex-shrink: 0;
 }
 
 /* ── Driver Row ───────────────────────────────────────────────────── */
@@ -342,17 +485,18 @@ body {
 .gap-dnf { color: var(--red) !important; font-weight: 700; letter-spacing: 0.05em; }
 
 .driver-row td {
-  padding: 10px 14px;
+  padding: 5px 7px;
   white-space: nowrap;
   vertical-align: middle;
 }
 
 /* Position */
 .col-pos {
-  font-size: 1rem;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
   font-weight: 700;
   color: #fff;
-  width: 44px;
+  width: 36px;
   text-align: center;
 }
 
@@ -360,9 +504,9 @@ body {
 .col-driver {
   display: flex !important;
   align-items: center;
-  gap: 8px;
-  min-width: 80px;
-  width: 80px;
+  gap: 6px;
+  min-width: 70px;
+  width: 70px;
 }
 
 .team-bar {
@@ -373,9 +517,9 @@ body {
 }
 
 .driver-code {
-  font-size: 0.88rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   color: #fff;
   min-width: 30px;
 }
@@ -383,45 +527,85 @@ body {
 /* Gap */
 .col-gap {
   font-family: var(--mono);
-  font-size: 0.8rem;
-  min-width: 80px;
+  font-size: 0.72rem;
+  min-width: 68px;
   color: var(--text);
 }
 
-/* Tyre */
-.col-tyre { min-width: 64px; }
-
-.tyre-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-weight: 700;
-  font-size: 0.82rem;
-  border: 1.5px solid;
-  border-radius: 4px;
-  padding: 2px 7px;
-  letter-spacing: 0.02em;
+/* Interval (gap to car ahead) */
+.col-int {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  min-width: 58px;
+  color: var(--text-dim);
 }
 
-.tyre-age {
-  font-size: 0.68rem;
-  font-weight: 400;
-  opacity: 0.75;
+/* PIT badge */
+.pit-badge {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 1px 4px;
+  background: var(--green);
+  color: #000;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* Tyre */
+.col-tyre { min-width: 90px; }
+
+.tyre-history {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.tyre-stint {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.tyre-stint.tyre-past { opacity: 0.35; }
+
+.tyre-laps {
+  font-size: 0.65rem;
+  font-family: var(--mono);
+  color: var(--text-dim);
+}
+
+.tyre-circle {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.62rem;
+  font-weight: 700;
+  flex-shrink: 0;
 }
 
 /* Sector times */
 .col-sector {
   font-family: var(--mono);
-  font-size: 0.78rem;
+  font-size: 0.7rem;
   color: var(--text-dim);
-  min-width: 62px;
+  min-width: 54px;
 }
+
+.sector-purple { color: #c084fc !important; font-weight: 700; }
+.sector-green  { color: #00d761 !important; font-weight: 600; }
+.sector-yellow { color: #ffd700 !important; }
 
 /* Last lap */
 .col-laptime {
   font-family: var(--mono);
-  font-size: 0.82rem;
-  font-weight: 600;
+  font-size: 0.74rem;
+  font-weight: 700;
   color: #fff;
-  min-width: 78px;
+  min-width: 66px;
 }

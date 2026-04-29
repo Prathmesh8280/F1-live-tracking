@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { API_BASE } from '../config'
 const SVG_W = 500
-const SVG_H = 400
-const PADDING = 36
+const SVG_H = 500
+const PADDING = 10
 
 const SECTOR_COLORS = ['#e8002d', '#ffd700', '#00aaff']  // S1 red, S2 yellow, S3 blue
 
@@ -164,13 +164,13 @@ export default function TrackMap({ isLiveParent, positions }) {
 
           {/* Dark border underneath everything */}
           <polyline points={toPolylinePoints(outline, transform.toSVG)}
-            fill="none" stroke="#222" strokeWidth="9"
+            fill="none" stroke="#333" strokeWidth="12"
             strokeLinecap="round" strokeLinejoin="round" />
 
           {/* Sector-coloured centre lines */}
           {sectorPoints.map((pts, i) => (
             <polyline key={i} points={pts}
-              fill="none" stroke={SECTOR_COLORS[i]} strokeWidth="3"
+              fill="none" stroke={SECTOR_COLORS[i]} strokeWidth="5"
               strokeLinecap="round" strokeLinejoin="round" />
           ))}
 

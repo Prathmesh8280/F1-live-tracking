@@ -65,6 +65,10 @@ class OpenF1Client:
         resp.raise_for_status()
         return resp.json()
 
+    async def get_pit_stops(self, session_key: int):
+        resp = await self._get(f"{BASE_URL}/pit", params={"session_key": session_key})
+        return _list_or_empty(resp)
+
     async def get_weather(self, session_key: int):
         resp = await self._get(f"{BASE_URL}/weather", params={"session_key": session_key})
         return _list_or_empty(resp)

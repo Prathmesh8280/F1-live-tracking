@@ -19,6 +19,7 @@ class RaceState:
         self.sector_fractions: list[float] = []
         self.car_positions: dict[int, dict] = {}
 
+        self.pit_stops: list[dict] = []
         self.weather: dict = {}
         self.race_control: list[dict] = []
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Header from './components/Header'
 import WeatherStrip from './components/WeatherStrip'
+import RaceBanner from './components/RaceBanner'
 import TrackMap from './components/TrackMap'
 import TimingTower from './components/TimingTower'
 import { API_BASE } from './config'
@@ -20,10 +21,8 @@ function App() {
     }
   }, [])
 
-  // Always fetch once on mount
   useEffect(() => { fetchData() }, [fetchData])
 
-  // Only poll while the race is live — finished races never change
   useEffect(() => {
     if (!data?.is_live) return
     const id = setInterval(fetchData, 2000)
@@ -40,9 +39,15 @@ function App() {
   return (
     <div className="app">
       <Header data={data} />
-      <WeatherStrip weather={data?.weather} />
+      <div className="header-stripe" />
       <div className="main-grid">
-        <TrackMap isLiveParent={data?.is_live} positions={data?.positions} />
+        <div className="left-panel">
+          <TrackMap isLiveParent={data?.is_live} positions={data?.positions} />
+          <div className="panel-meta">
+            <RaceBanner messages={data?.race_control} />
+            <WeatherStrip weather={data?.weather} />
+          </div>
+        </div>
         <TimingTower data={data} />
       </div>
     </div>
