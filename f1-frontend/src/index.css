@@ -1,68 +1,427 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+  --bg:           #0c0c0c;
+  --surface:      #161616;
+  --surface-alt:  #1e1e1e;
+  --border:       #2a2a2a;
+  --text:         #e8e8e8;
+  --text-dim:     #808080;
+  --red:          #e8002d;
+  --green:        #00d761;
+  --mono:         'Courier New', Courier, monospace;
 }
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
   min-height: 100vh;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+/* ── Layout ───────────────────────────────────────────────────────── */
+.app {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1.25rem 3rem;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
+.status-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  font-size: 1.1rem;
+  color: var(--text-dim);
+  letter-spacing: 0.05em;
 }
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+.status-screen.error { color: var(--red); }
+
+/* ── Header ───────────────────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem 0 1.25rem;
+  border-bottom: 3px solid var(--red);
+  margin-bottom: 1.5rem;
+  gap: 1rem;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.f1-logo {
+  background: var(--red);
+  color: #fff;
+  font-weight: 900;
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  padding: 3px 7px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.race-name {
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.lap-counter {
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+}
+
+.status-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 4px 10px;
+  border-radius: 3px;
+}
+.status-badge.live {
+  background: var(--red);
+  color: #fff;
+  animation: blink 1.6s ease-in-out infinite;
+}
+.status-badge.finished {
+  background: #2a2a2a;
+  color: var(--text-dim);
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.65; }
+}
+
+/* ── Weather strip ────────────────────────────────────────────────── */
+.weather-strip {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 0.5rem 0 1rem;
+  flex-wrap: wrap;
+}
+
+.weather-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  letter-spacing: 0.04em;
+}
+
+.weather-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  opacity: 0.6;
+}
+
+.weather-value {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.weather-rain {
+  color: #00aaff;
+  font-weight: 700;
+}
+
+/* ── Race control feed ────────────────────────────────────────────── */
+.race-control {
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.race-control-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 7px 12px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+}
+
+.rc-messages {
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.rc-message {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 5px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.76rem;
+}
+.rc-message:last-child { border-bottom: none; }
+
+.rc-time {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.rc-flag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 1px 5px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.rc-flag.yellow  { background: #ffd700; color: #000; }
+.rc-flag.red     { background: var(--red); color: #fff; }
+.rc-flag.sc      { background: #ff8c00; color: #fff; }
+.rc-flag.vsc     { background: #ff8c00; color: #fff; }
+.rc-flag.clear   { background: var(--green); color: #000; }
+.rc-flag.default { background: var(--border); color: var(--text-dim); }
+
+.rc-text {
+  color: var(--text);
+  line-height: 1.3;
+}
+
+/* ── Main grid (map + tower) ──────────────────────────────────────── */
+.main-grid {
+  display: grid;
+  grid-template-columns: 480px 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .main-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Track Map ────────────────────────────────────────────────────── */
+.track-map-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  position: sticky;
+  top: 1rem;
+}
+
+.track-map-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.track-map-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+}
+
+.sector-legend {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.sector-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+
+.sector-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.map-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--red);
+  animation: blink 1.6s ease-in-out infinite;
+}
+
+.track-map-loading {
+  padding: 3rem 1rem;
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 0.82rem;
+}
+
+.track-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: var(--surface);
+}
+
+/* ── Timing Tower ─────────────────────────────────────────────────── */
+.timing-tower { width: 100%; }
+
+.table-wrap {
+  overflow-x: auto;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.timing-tower table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.timing-tower thead th {
+  background: var(--surface);
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+
+.no-data {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-dim);
+}
+
+.last-updated {
+  margin-top: 0.75rem;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  text-align: right;
+}
+
+/* ── Driver Row ───────────────────────────────────────────────────── */
+.driver-row { border-bottom: 1px solid var(--border); }
+.driver-row:last-child { border-bottom: none; }
+.driver-row:nth-child(odd)  { background: var(--surface); }
+.driver-row:nth-child(even) { background: var(--surface-alt); }
+.driver-row:hover { background: #252525; }
+
+.driver-row.dnf { opacity: 0.45; }
+.driver-row.dnf .col-pos { color: var(--text-dim); }
+.gap-dnf { color: var(--red) !important; font-weight: 700; letter-spacing: 0.05em; }
+
+.driver-row td {
+  padding: 10px 14px;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+/* Position */
+.col-pos {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  width: 44px;
+  text-align: center;
+}
+
+/* Driver cell */
+.col-driver {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  min-width: 80px;
+  width: 80px;
+}
+
+.team-bar {
+  width: 4px;
+  height: 22px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.driver-code {
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #fff;
+  min-width: 30px;
+}
+
+/* Gap */
+.col-gap {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  min-width: 80px;
+  color: var(--text);
+}
+
+/* Tyre */
+.col-tyre { min-width: 64px; }
+
+.tyre-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 700;
+  font-size: 0.82rem;
+  border: 1.5px solid;
+  border-radius: 4px;
+  padding: 2px 7px;
+  letter-spacing: 0.02em;
+}
+
+.tyre-age {
+  font-size: 0.68rem;
+  font-weight: 400;
+  opacity: 0.75;
+}
+
+/* Sector times */
+.col-sector {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  min-width: 62px;
+}
+
+/* Last lap */
+.col-laptime {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #fff;
+  min-width: 78px;
 }

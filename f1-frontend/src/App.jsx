@@ -1,34 +1,51 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState, useEffect, useCallback } from 'react'
+import Header from './components/Header'
+import WeatherStrip from './components/WeatherStrip'
+import TrackMap from './components/TrackMap'
+import TimingTower from './components/TimingTower'
+import { API_BASE } from './config'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [data, setData]   = useState(null)
+  const [error, setError] = useState(null)
+
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/race/timing_tower`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      setData(await res.json())
+      setError(null)
+    } catch (e) {
+      setError(e.message)
+    }
+  }, [])
+
+  // Always fetch once on mount
+  useEffect(() => { fetchData() }, [fetchData])
+
+  // Only poll while the race is live — finished races never change
+  useEffect(() => {
+    if (!data?.is_live) return
+    const id = setInterval(fetchData, 2000)
+    return () => clearInterval(id)
+  }, [fetchData, data?.is_live])
+
+  if (!data && !error) {
+    return <div className="status-screen">Loading race data…</div>
+  }
+  if (error && !data) {
+    return <div className="status-screen error">Could not reach backend: {error}</div>
+  }
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <div className="app">
+      <Header data={data} />
+      <WeatherStrip weather={data?.weather} />
+      <div className="main-grid">
+        <TrackMap isLiveParent={data?.is_live} positions={data?.positions} />
+        <TimingTower data={data} />
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    </div>
   )
 }
 

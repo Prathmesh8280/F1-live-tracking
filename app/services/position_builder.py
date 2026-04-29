@@ -1,29 +1,37 @@
 def normalize_positions(
     raw_positions: list[dict],
-    drivers: dict[int, dict]
+    drivers: dict[int, dict],
 ) -> list[dict]:
     """
-    Combines raw OpenF1 positions with normalized driver metadata.
-    Returns sorted timing-tower-ready position list.
+    Combines raw OpenF1 positions with driver metadata.
+    OpenF1 returns full position history — we keep only the latest entry per
+    driver (highest date value) before building the sorted leaderboard.
     """
-    normalized = []
-
+    # Deduplicate: keep the most recent position entry per driver
+    latest_by_driver: dict[int, dict] = {}
     for p in raw_positions:
-        driver_number = p.get("driver_number")
-        driver = drivers.get(driver_number)
+        number = p.get("driver_number")
+        if number is None:
+            continue
+        existing = latest_by_driver.get(number)
+        if existing is None or (p.get("date", "") > existing.get("date", "")):
+            latest_by_driver[number] = p
 
+    normalized = []
+    for driver_number, p in latest_by_driver.items():
+        driver = drivers.get(driver_number)
         if not driver:
             continue
 
+        position = p.get("position")
         normalized.append({
-            "position": p.get("position"),
+            "position": position,
             "driver": {
                 "number": driver["number"],
                 "code": driver["code"],
-                "name": f'{driver["first_name"]} {driver["last_name"]}',
-                "team": driver["team"],
-                "team_color": driver["team_color"]
-            }
+                "team_color": driver["team_color"],
+            },
         })
 
-    return sorted(normalized, key=lambda x: x["position"])
+    # Sort with None positions pushed to the end
+    return sorted(normalized, key=lambda x: (x["position"] is None, x["position"] or 0))
