@@ -33,8 +33,9 @@ class OpenF1Client:
             await asyncio.sleep(wait)
         return resp  # return last response after exhausting retries
 
-    async def get_race_sessions(self):
-        resp = await self._get(f"{BASE_URL}/sessions", params={"session_name": "Race"})
+    async def get_sessions(self, year: int | None = None) -> list:
+        params = {"year": year} if year is not None else None
+        resp = await self._get(f"{BASE_URL}/sessions", params=params)
         resp.raise_for_status()
         return resp.json()
 

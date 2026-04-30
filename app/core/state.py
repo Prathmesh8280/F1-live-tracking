@@ -23,6 +23,9 @@ class RaceState:
         self.weather: dict = {}
         self.race_control: list[dict] = []
 
+        self.session_type: Optional[str] = None
+        self.total_laps: Optional[int] = None
+        self.session_remaining: Optional[str] = None
         self.is_live: bool = False
         self.last_updated: Optional[datetime] = None
 

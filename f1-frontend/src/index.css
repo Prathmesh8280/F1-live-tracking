@@ -169,6 +169,19 @@ body {
   color: #fff;
 }
 
+.session-tag {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  padding: 3px 8px;
+  border-radius: 3px;
+  background: #1e1e2e;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
 .header-right {
   display: flex;
   align-items: center;
@@ -339,6 +352,37 @@ body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+
+/* ── Session info bar (lap counter / session countdown) ──────────── */
+.session-info-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sib-label {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.sib-value {
+  font-family: var(--mono);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.04em;
+}
+
+.sib-total {
+  font-size: 0.85rem;
+  color: var(--text-dim);
 }
 
 /* banner inside panel: remove its own border-radius + margin, fill edge-to-edge */

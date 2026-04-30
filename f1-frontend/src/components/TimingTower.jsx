@@ -1,7 +1,15 @@
 import DriverRow from './DriverRow'
 
-function buildRows(positions, intervals, tyres, sectors, pitStops, lapNumber) {
-  // Latest interval per driver
+function sessionCategory(sessionType) {
+  if (!sessionType) return 'race'
+  const s = sessionType.toLowerCase()
+  if (s.includes('practice')) return 'practice'
+  if (s.includes('qualifying')) return 'qualifying'
+  if (s === 'sprint') return 'sprint'
+  return 'race'
+}
+
+function buildRows(positions, intervals, tyres, sectors, pitStops, lapNumber, category) {
   const intervalMap = {}
   for (const iv of intervals ?? []) {
     const n = iv.driver_number
@@ -10,7 +18,6 @@ function buildRows(positions, intervals, tyres, sectors, pitStops, lapNumber) {
     }
   }
 
-  // Full tyre history per driver, sorted by stint number
   const tyreHistoryMap = {}
   for (const stint of tyres ?? []) {
     const n = stint.driver_number
@@ -21,7 +28,6 @@ function buildRows(positions, intervals, tyres, sectors, pitStops, lapNumber) {
     tyreHistoryMap[n].sort((a, b) => a.stint_number - b.stint_number)
   }
 
-  // Drivers currently in pit lane: pit record exists with no pit_duration yet
   const pitMap = {}
   for (const pit of pitStops ?? []) {
     if (pit.pit_duration == null) {
@@ -43,10 +49,11 @@ function buildRows(positions, intervals, tyres, sectors, pitStops, lapNumber) {
     const sector = sectors?.[n] ?? sectors?.[String(n)]
 
     const gapStr = String(intervalMap[n]?.gap_to_leader ?? '').trim().toUpperCase()
-    const lapsBehind = sector?.lap_number != null && lapNumber != null
+    const isRaceLike = category === 'race' || category === 'sprint'
+    const lapsBehind = isRaceLike && sector?.lap_number != null && lapNumber != null
       ? lapNumber - sector.lap_number
       : 0
-    const isDnf = gapStr === 'DNF' || lapsBehind > 2
+    const isDnf = gapStr === 'DNF' || (isRaceLike && lapsBehind > 2)
     const isPitting = !isDnf && (pitMap[n] === true)
 
     return { ...p, interval: intervalMap[n], tyre, tyreAge, tyreHistory: history, sector, isDnf, isPitting }
@@ -59,6 +66,9 @@ function minOf(rows, fn) {
 }
 
 export default function TimingTower({ data }) {
+  const category   = sessionCategory(data.session_type)
+  const showGapInt = category === 'race' || category === 'sprint'
+
   const rows = buildRows(
     data.positions,
     data.intervals,
@@ -66,10 +76,11 @@ export default function TimingTower({ data }) {
     data.sectors,
     data.pit_stops,
     data.lap_number,
+    category,
   )
 
   if (rows.length === 0) {
-    return <p className="no-data">No race data available yet.</p>
+    return <p className="no-data">No session data available yet.</p>
   }
 
   const overallBest = {
@@ -87,8 +98,8 @@ export default function TimingTower({ data }) {
             <tr>
               <th>POS</th>
               <th>DRIVER</th>
-              <th>GAP</th>
-              <th>INT</th>
+              {showGapInt && <th>GAP</th>}
+              {showGapInt && <th>INT</th>}
               <th>TYRES</th>
               <th>S1</th>
               <th>S2</th>
@@ -99,7 +110,12 @@ export default function TimingTower({ data }) {
           </thead>
           <tbody>
             {rows.map((row) => (
-              <DriverRow key={row.driver.number} row={row} overallBest={overallBest} />
+              <DriverRow
+                key={row.driver.number}
+                row={row}
+                overallBest={overallBest}
+                showGapInt={showGapInt}
+              />
             ))}
           </tbody>
         </table>

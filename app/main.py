@@ -10,7 +10,8 @@ from app.core.state import race_state
 from app.core.utils import parse_dt
 from app.api.race import router as race_router
 from app.services.session_resolver import resolve_race_session
-from app.services.poller import poll_live_race
+from app.services.live_timing import start_live_timing
+from app.services.broadcaster import broadcaster
 from app.services.openf1_client import openf1_client
 from app.services.sector_builder import build_latest_sectors
 from app.services.driver_builder import build_driver_map
@@ -104,13 +105,16 @@ async def _load_final_car_positions(laps: list[dict]) -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # ── Startup ──────────────────────────────────────────────────────────────
+    broadcaster.set_loop(asyncio.get_running_loop())
+
     session, is_live = await resolve_race_session()
     if not session:
         logger.warning("No valid race session found — API will return empty state.")
     else:
-        race_state.session_key = session["session_key"]
-        race_state.meeting_key = session["meeting_key"]
-        race_state.is_live     = is_live
+        race_state.session_key  = session["session_key"]
+        race_state.meeting_key  = session["meeting_key"]
+        race_state.session_type = session.get("session_name", "Race")
+        race_state.is_live      = is_live
 
         # Round 1: meeting info + driver list (parallel, both need session/meeting key)
         meeting, drivers = await asyncio.gather(
@@ -137,6 +141,8 @@ async def lifespan(app: FastAPI):
             valid_laps = [l for l in laps if not l.get("is_deleted")]
             if valid_laps:
                 race_state.lap_number = max(l["lap_number"] for l in valid_laps)
+                if race_state.session_type in ("Race", "Sprint"):
+                    race_state.total_laps = race_state.lap_number
             race_state.sectors_by_driver = build_latest_sectors(laps)
 
         race_state.last_updated = datetime.now(timezone.utc)
@@ -152,27 +158,31 @@ async def lifespan(app: FastAPI):
                 await asyncio.gather(*tasks)
                 logger.info("Map data fully loaded.")
 
-                # Weather + race control + pit stops fetched after map (lower priority)
-                weather, race_control, pit_stops = await asyncio.gather(
-                    openf1_client.get_weather(session["session_key"]),
-                    openf1_client.get_race_control(session["session_key"]),
-                    openf1_client.get_pit_stops(session["session_key"]),
-                )
-                if weather:
-                    race_state.weather = latest_weather(weather)
-                race_state.race_control = race_control
-                race_state.pit_stops = pit_stops
-                logger.info(
-                    "Weather + race control loaded (%d messages).", len(race_control)
-                )
+                # Weather + race control + pit stops are owned by FastF1 for live
+                # sessions; fetching from OpenF1 here would overwrite fresher data.
+                if not is_live:
+                    weather, race_control, pit_stops = await asyncio.gather(
+                        openf1_client.get_weather(session["session_key"]),
+                        openf1_client.get_race_control(session["session_key"]),
+                        openf1_client.get_pit_stops(session["session_key"]),
+                    )
+                    if weather:
+                        race_state.weather = latest_weather(weather)
+                    race_state.race_control = race_control
+                    race_state.pit_stops = pit_stops
+                    logger.info(
+                        "Weather + race control loaded (%d messages).", len(race_control)
+                    )
+                # Push updated state to any already-connected WS clients
+                broadcaster.push()
             except Exception:
                 logger.exception("Background data fetch failed.")
 
         asyncio.create_task(_load_background())
 
         if is_live:
-            asyncio.create_task(poll_live_race())
-            logger.info("Live race detected: %s — poller started.", race_state.meeting_name)
+            await start_live_timing()
+            logger.info("Live race detected: %s — FastF1 live timing started.", race_state.meeting_name)
         else:
             logger.info("No live race. Showing last finished race: %s", race_state.meeting_name)
 

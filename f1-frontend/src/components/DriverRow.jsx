@@ -70,7 +70,7 @@ function sectorClass(time, personalBest, overallBest) {
   return 'sector-yellow'
 }
 
-export default function DriverRow({ row, overallBest }) {
+export default function DriverRow({ row, overallBest, showGapInt = true }) {
   const { position, driver, interval, tyre, tyreAge, tyreHistory, sector, isDnf, isPitting } = row
 
   const gap = parseGap(interval)
@@ -93,9 +93,9 @@ export default function DriverRow({ row, overallBest }) {
         {isPitting && <span className="pit-badge">PIT</span>}
       </td>
 
-      <td className={`col-gap${isDnf ? ' gap-dnf' : ''}`}>{gapLabel}</td>
+      {showGapInt && <td className={`col-gap${isDnf ? ' gap-dnf' : ''}`}>{gapLabel}</td>}
 
-      <td className="col-int">{intLabel}</td>
+      {showGapInt && <td className="col-int">{intLabel}</td>}
 
       <td className="col-tyre">
         {!isDnf && tyreHistory?.length > 0 ? (
