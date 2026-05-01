@@ -131,6 +131,11 @@ class LiveTimingService:
         name = meeting.get("OfficialName") or meeting.get("Name", "")
         if name:
             race_state.meeting_name = name
+        # FastF1 sends the session name ("Practice 1", "Qualifying", "Race", ...)
+        # Use it to fill session_type when OpenF1 didn't seed it.
+        session_name = data.get("Name", "")
+        if session_name:
+            race_state.session_type = session_name
         race_state.is_live = True
         broadcaster.push()
 

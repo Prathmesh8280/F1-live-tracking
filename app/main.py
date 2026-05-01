@@ -109,7 +109,12 @@ async def lifespan(app: FastAPI):
 
     session, is_live = await resolve_race_session()
     if not session:
-        logger.warning("No valid race session found — API will return empty state.")
+        # OpenF1 has no data for the current period (e.g. new season not yet published).
+        # FastF1 connects directly to F1's live timing feed — try it anyway.
+        # If a session is live, SessionInfo / DriverList / TimingData will populate
+        # race_state automatically and broadcaster will push to connected clients.
+        logger.warning("No OpenF1 session found — attempting FastF1 live feed directly.")
+        await start_live_timing()
     else:
         race_state.session_key  = session["session_key"]
         race_state.meeting_key  = session["meeting_key"]
