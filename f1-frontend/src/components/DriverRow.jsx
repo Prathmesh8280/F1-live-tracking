@@ -47,6 +47,8 @@ function parseGap(interval) {
   const n = parseFloat(raw)
   if (isNaN(n)) return { type: 'none' }
   if (n === 0)  return { type: 'leader' }
+  if (Number.isInteger(n) && n > 0)
+    return { type: 'lapped', label: `+${n} LAP${n > 1 ? 'S' : ''}` }
   return { type: 'gap', label: `+${n.toFixed(3)}` }
 }
 
@@ -76,11 +78,10 @@ export default function DriverRow({ row, overallBest, showGapInt = true }) {
 
   const gap = parseGap(interval)
 
-  const gapLabel =
+  const gapLabel = isDnf ? 'OUT' :
     gap.type === 'leader'  ? 'LEADER' :
     gap.type === 'gap'     ? gap.label :
-    gap.type === 'lapped'  ? gap.label :
-    gap.type === 'dnf'     ? 'DNF'    : '–'
+    gap.type === 'lapped'  ? gap.label : '–'
 
   const intLabel = isDnf ? '–' : fmtIntervalToAhead(interval)
 
@@ -94,7 +95,11 @@ export default function DriverRow({ row, overallBest, showGapInt = true }) {
         {isPitting && <span className="pit-badge">PIT</span>}
       </td>
 
-      {showGapInt && <td className={`col-gap${isDnf ? ' gap-dnf' : ''}`}>{gapLabel}</td>}
+      {showGapInt && (
+        <td className={`col-gap${isDnf ? ' gap-lapped' : gap.type === 'lapped' ? ' gap-lapped' : ''}`}>
+          {gapLabel}
+        </td>
+      )}
 
       {showGapInt && <td className="col-int">{intLabel}</td>}
 

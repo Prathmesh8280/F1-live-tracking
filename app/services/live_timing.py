@@ -554,10 +554,12 @@ class LiveTimingService:
             gap     = td.get("GapToLeader", "")
             int_raw = td.get("IntervalToPositionAhead", {})
             int_val = int_raw.get("Value", "") if isinstance(int_raw, dict) else str(int_raw)
+            retired = bool(td.get("Retired") or td.get("Stopped"))
             intervals.append({
                 "driver_number": num,
                 "gap_to_leader": gap,
                 "interval":      int_val,
+                "retired":       retired,
                 "date":          now,
             })
         race_state.intervals = intervals

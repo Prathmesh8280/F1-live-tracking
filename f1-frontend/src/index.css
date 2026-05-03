@@ -533,9 +533,7 @@ body {
 .driver-row:nth-child(even) { background: var(--surface-alt); }
 .driver-row:hover { background: #252525; }
 
-.driver-row.dnf { opacity: 0.45; }
-.driver-row.dnf .col-pos { color: var(--text-dim); }
-.gap-dnf { color: var(--red) !important; font-weight: 700; letter-spacing: 0.05em; }
+.gap-lapped { color: #f97316; font-weight: 600; }
 
 .driver-row td {
   padding: 5px 7px;

@@ -16,14 +16,18 @@ _401_LOG_EVERY  = 60  # suppress repeated 401 warnings
 
 async def poll_car_positions() -> None:
     """
-    Poll OpenF1 /location every 2 s and push car positions to the track map.
-    Only runs while the session is live and the session key is known.
-    Never exits — handles errors silently and retries.
+    Poll OpenF1 /location every 2 s while the session is live.
+    Exits cleanly once the session is no longer live (historical fallback loaded).
     """
     last_401_log = 0.0
 
     while True:
-        if not race_state.is_live or not race_state.session_key:
+        if not race_state.is_live:
+            # If historical data has loaded (meeting known) or we were live and
+            # the session ended — stop polling, nothing left to do.
+            if race_state.meeting_name:
+                logger.info("Track map: session not live — stopping location poll")
+                return
             await asyncio.sleep(1)
             continue
 
@@ -43,14 +47,10 @@ async def poll_car_positions() -> None:
                 broadcaster.push()
 
         except Exception as exc:
-            import time as _time
             status = getattr(getattr(exc, "response", None), "status_code", None)
             if status == 401:
-                now = _time.monotonic()
-                if now - last_401_log >= _401_LOG_EVERY:
-                    logger.warning("Track map: OpenF1 /location returned 401 — retrying")
-                    last_401_log = now
-            else:
-                logger.debug("Track map poll error: %s", exc)
+                logger.warning("Track map: OpenF1 /location returned 401 — stopping poll")
+                return
+            logger.debug("Track map poll error: %s", exc)
 
         await asyncio.sleep(POLL_INTERVAL)

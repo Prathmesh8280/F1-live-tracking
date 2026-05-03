@@ -50,9 +50,9 @@ function buildRows(positions, intervals, tyres, sectors, pitStops, lapNumber, ca
 
     const gapStr = String(intervalMap[n]?.gap_to_leader ?? '').trim().toUpperCase()
     const isRaceLike = category === 'race' || category === 'sprint'
-    // Only treat as DNF when FastF1 explicitly says so — never infer from lap count.
-    // Drivers that are lapped show "+X LAP(S)" which is valid racing status.
-    const isDnf = gapStr === 'DNF' || gapStr === 'RETIRED' || gapStr === 'DISQUALIFIED'
+    const isDnf = intervalMap[n]?.retired === true
+      || gapStr === 'DNF' || gapStr === 'OUT'
+      || gapStr === 'RETIRED' || gapStr === 'DISQUALIFIED'
     const isPitting = !isDnf && (pitMap[n] === true)
 
     return { ...p, interval: intervalMap[n], tyre, tyreAge, tyreHistory: history, sector, isDnf, isPitting }
