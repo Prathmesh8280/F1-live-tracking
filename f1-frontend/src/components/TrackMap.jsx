@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
-import { API_BASE } from '../config'
+import { useMemo } from 'react'
+
 const SVG_W = 500
 const SVG_H = 500
 const PADDING = 10
@@ -34,13 +34,8 @@ function toPolylinePoints(points, toSVG) {
   }).join(' ')
 }
 
-/**
- * Split outline into three sector slices using time-based fractions.
- * We overlap by one point at each boundary to avoid visible gaps.
- */
 function buildSectorPoints(outline, fractions, toSVG) {
   if (!fractions?.length || fractions.length < 2) {
-    // No fraction data — fall back to equal thirds
     const n = outline.length
     return [
       toPolylinePoints(outline.slice(0, Math.floor(n / 3) + 1), toSVG),
@@ -48,9 +43,9 @@ function buildSectorPoints(outline, fractions, toSVG) {
       toPolylinePoints(outline.slice(Math.floor(2 * n / 3)), toSVG),
     ]
   }
-  const n   = outline.length
-  const i1  = Math.floor(fractions[0] * n)
-  const i2  = Math.floor(fractions[1] * n)
+  const n  = outline.length
+  const i1 = Math.floor(fractions[0] * n)
+  const i2 = Math.floor(fractions[1] * n)
   return [
     toPolylinePoints(outline.slice(0, i1 + 1), toSVG),
     toPolylinePoints(outline.slice(i1, i2 + 1), toSVG),
@@ -58,44 +53,32 @@ function buildSectorPoints(outline, fractions, toSVG) {
   ]
 }
 
-export default function TrackMap({ isLiveParent, positions }) {
-  const [outline,  setOutline]  = useState([])
-  const [fractions, setFractions] = useState([])
-  const [carPos,   setCarPos]   = useState({})
-  const [loading,  setLoading]  = useState(true)
+export default function TrackMap({ isLive, positions, trackOutline, sectorFractions, carPositions }) {
+  const outline   = trackOutline   ?? []
+  const fractions = sectorFractions ?? []
+  const carPos    = carPositions   ?? {}
 
-  const fetchMap = useCallback(async () => {
-    try {
-      const res  = await fetch(`${API_BASE}/race/map`)
-      if (!res.ok) return
-      const data = await res.json()
-      if (data.track_outline?.length)  setOutline(data.track_outline)
-      if (data.sector_fractions?.length) setFractions(data.sector_fractions)
-      setCarPos(data.car_positions ?? {})
-    } catch (_) {}
-    finally { setLoading(false) }
-  }, [])
+  // When no live GPS data is available (finished session), show all dots
+  // at the start/finish point until the backend pushes computed positions.
+  const effectiveCarPos = useMemo(() => {
+    if (Object.keys(carPos).length > 0) return carPos
+    const sorted = [...(positions ?? [])].sort((a, b) => (a.position ?? 999) - (b.position ?? 999))
+    if (!sorted.length) return carPos
+    const fallback = outline[0] ?? { x: 0, y: 0 }
+    const result = {}
+    sorted.forEach((p) => {
+      result[p.driver.number] = { x: fallback.x, y: fallback.y, code: p.driver.code, team_color: p.driver.team_color }
+    })
+    return result
+  }, [carPos, outline, positions])
 
-  // Always fetch once on mount
-  useEffect(() => { fetchMap() }, [fetchMap])
+  // If no circuit outline, derive coordinate space from car positions instead
+  const transformPoints = useMemo(() => {
+    if (outline.length) return outline
+    return Object.values(effectiveCarPos).map(d => ({ x: d.x, y: d.y }))
+  }, [outline, effectiveCarPos])
 
-  // Live race: poll every 2s continuously
-  useEffect(() => {
-    if (!isLiveParent) return
-    const id = setInterval(fetchMap, 2000)
-    return () => clearInterval(id)
-  }, [fetchMap, isLiveParent])
-
-  // Finished race: keep retrying every 3s until background tasks have populated
-  // all map data (track outline + car positions), then stop.
-  const mapComplete = outline.length > 0 && Object.keys(carPos).length > 0
-  useEffect(() => {
-    if (isLiveParent || mapComplete) return
-    const id = setInterval(fetchMap, 3000)
-    return () => clearInterval(id)
-  }, [fetchMap, isLiveParent, mapComplete])
-
-  const transform = useMemo(() => buildTransform(outline), [outline])
+  const transform = useMemo(() => buildTransform(transformPoints), [transformPoints])
 
   const sectorPoints = useMemo(() => {
     if (!transform || !outline.length) return []
@@ -104,18 +87,16 @@ export default function TrackMap({ isLiveParent, positions }) {
 
   const drivers = useMemo(() => {
     if (!transform) return []
-    // Build position lookup so leaders render on top (SVG: last element = topmost)
     const posMap = {}
     for (const p of positions ?? []) posMap[p.driver.number] = p.position ?? 999
-    return Object.entries(carPos)
+    return Object.entries(effectiveCarPos)
       .map(([num, d]) => {
         const { x, y } = transform.toSVG(d.x, d.y)
         return { num: Number(num), x, y, code: d.code, color: d.team_color ?? '#888', pos: posMap[Number(num)] ?? 999 }
       })
-      .sort((a, b) => b.pos - a.pos)  // P20 first → P1 last (drawn on top)
-  }, [carPos, transform, positions])
+      .sort((a, b) => b.pos - a.pos)
+  }, [effectiveCarPos, transform, positions])
 
-  // Checkered start/finish bar + direction arrow at outline[0]
   const startFinish = useMemo(() => {
     if (!transform || outline.length < 2) return null
     const p0 = transform.toSVG(outline[0].x, outline[0].y)
@@ -123,11 +104,8 @@ export default function TrackMap({ isLiveParent, positions }) {
     const dx = p1.x - p0.x
     const dy = p1.y - p0.y
     const len = Math.sqrt(dx * dx + dy * dy) || 1
-    // Perpendicular angle for the checkered bar
-    const barAngleDeg  = +(Math.atan2(dx, -dy) * (180 / Math.PI)).toFixed(1)
-    // Arrow rotation: default arrow points up (-Y); rotate to match track direction
+    const barAngleDeg   = +(Math.atan2(dx, -dy) * (180 / Math.PI)).toFixed(1)
     const arrowAngleDeg = +(Math.atan2(dy, dx) * (180 / Math.PI) + 90).toFixed(1)
-    // Place arrow to the left of the bar (perpendicular offset)
     const perpX = -dy / len
     const perpY =  dx / len
     return {
@@ -152,47 +130,44 @@ export default function TrackMap({ isLiveParent, positions }) {
             </span>
           ))}
         </div>
-        {isLiveParent && <span className="map-live-dot" />}
+        {isLive && <span className="map-live-dot" />}
       </div>
 
-      {loading ? (
-        <div className="track-map-loading">Loading map…</div>
-      ) : !outline.length ? (
+      {!transform ? (
         <div className="track-map-loading">No track data available</div>
       ) : (
         <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} className="track-svg" aria-label="F1 track map">
 
-          {/* Dark border underneath everything */}
-          <polyline points={toPolylinePoints(outline, transform.toSVG)}
-            fill="none" stroke="#333" strokeWidth="12"
-            strokeLinecap="round" strokeLinejoin="round" />
-
-          {/* Sector-coloured centre lines */}
-          {sectorPoints.map((pts, i) => (
-            <polyline key={i} points={pts}
-              fill="none" stroke={SECTOR_COLORS[i]} strokeWidth="5"
+          {/* Circuit outline + sectors — only when outline data is available */}
+          {outline.length > 0 && <>
+            <polyline points={toPolylinePoints(outline, transform.toSVG)}
+              fill="none" stroke="#333" strokeWidth="12"
               strokeLinecap="round" strokeLinejoin="round" />
-          ))}
 
-          {/* Checkered start / finish bar + direction arrow */}
-          {startFinish && (<>
-            <g transform={`translate(${startFinish.cx},${startFinish.cy}) rotate(${startFinish.barAngleDeg})`}>
-              {[0,1,2,3].map(col => [0,1].map(row => (
-                <rect key={`${col}-${row}`}
-                  x={-11 + col * 5.5} y={row === 0 ? -5 : 0}
-                  width={5.5} height={5}
-                  fill={(col + row) % 2 === 0 ? '#fff' : '#111'}
-                />
-              )))}
-            </g>
-            {/* Navigation-style direction arrow */}
-            <g transform={`translate(${startFinish.arrowX},${startFinish.arrowY}) rotate(${startFinish.arrowAngleDeg})`}>
-              <polygon points="0,-11 7,8 0,3 -7,8"
-                fill="#fff" stroke="#0c0c0c" strokeWidth="1" strokeLinejoin="round" />
-            </g>
-          </>)}
+            {sectorPoints.map((pts, i) => (
+              <polyline key={i} points={pts}
+                fill="none" stroke={SECTOR_COLORS[i]} strokeWidth="5"
+                strokeLinecap="round" strokeLinejoin="round" />
+            ))}
 
-          {/* Driver dots */}
+            {startFinish && (<>
+              <g transform={`translate(${startFinish.cx},${startFinish.cy}) rotate(${startFinish.barAngleDeg})`}>
+                {[0,1,2,3].map(col => [0,1].map(row => (
+                  <rect key={`${col}-${row}`}
+                    x={-11 + col * 5.5} y={row === 0 ? -5 : 0}
+                    width={5.5} height={5}
+                    fill={(col + row) % 2 === 0 ? '#fff' : '#111'}
+                  />
+                )))}
+              </g>
+              <g transform={`translate(${startFinish.arrowX},${startFinish.arrowY}) rotate(${startFinish.arrowAngleDeg})`}>
+                <polygon points="0,-11 7,8 0,3 -7,8"
+                  fill="#fff" stroke="#0c0c0c" strokeWidth="1" strokeLinejoin="round" />
+              </g>
+            </>)}
+          </>}
+
+          {/* Driver dots — always shown when position data exists */}
           {drivers.map(d => (
             <g key={d.num} transform={`translate(${d.x.toFixed(1)}, ${d.y.toFixed(1)})`}>
               <circle r="11" fill={d.color} stroke="#0c0c0c" strokeWidth="1.5" />

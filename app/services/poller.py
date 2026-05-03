@@ -4,84 +4,53 @@ from datetime import datetime, timedelta, timezone
 
 from app.core.state import race_state
 from app.services.openf1_client import openf1_client
-from app.services.sector_builder import build_latest_sectors
-from app.services.position_builder import normalize_positions
 from app.services.map_builder import build_car_positions
-from app.services.weather_builder import latest_weather
+from app.services.broadcaster import broadcaster
 
 logger = logging.getLogger(__name__)
 
+POLL_INTERVAL   = 2   # seconds between location polls
+WINDOW_SECONDS  = 5   # fetch positions from the last N seconds
+_401_LOG_EVERY  = 60  # suppress repeated 401 warnings
 
-async def poll_live_race():
-    # Tick counter (each tick = 2s):
-    #   Every tick  (2s):  positions, intervals, locations
-    #   tick % 5 == 0 (10s): + stints, laps
-    #   tick % 3 == 0 (6s):  + race control  (flags/safety car are time-sensitive)
-    #   tick % 150 == 0 (300s / 5min): + weather
-    tick = 0
 
-    while race_state.is_live:
+async def poll_car_positions() -> None:
+    """
+    Poll OpenF1 /location every 2 s and push car positions to the track map.
+    Only runs while the session is live and the session key is known.
+    Never exits — handles errors silently and retries.
+    """
+    last_401_log = 0.0
+
+    while True:
+        if not race_state.is_live or not race_state.session_key:
+            await asyncio.sleep(1)
+            continue
+
         try:
-            session_key = race_state.session_key
-            recent = (datetime.now(timezone.utc) - timedelta(seconds=5)).strftime(
-                "%Y-%m-%dT%H:%M:%SZ"
+            date_gte = (
+                datetime.now(timezone.utc) - timedelta(seconds=WINDOW_SECONDS)
+            ).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+            locations = await openf1_client.get_locations(
+                race_state.session_key, date_gte=date_gte
             )
 
-            fetch_slow   = tick % 5  == 0  # stints + laps
-            fetch_rc     = tick % 3  == 0  # race control
-            fetch_weather = tick % 150 == 0  # weather — every 5 min
-
-            coros = [
-                openf1_client.get_positions(session_key),
-                openf1_client.get_intervals(session_key),
-                openf1_client.get_locations(session_key, date_gte=recent),
-            ]
-            if fetch_slow:
-                coros += [
-                    openf1_client.get_stints(session_key),
-                    openf1_client.get_laps(session_key),
-                    openf1_client.get_pit_stops(session_key),
-                ]
-            if fetch_rc:
-                coros.append(openf1_client.get_race_control(session_key))
-            if fetch_weather:
-                coros.append(openf1_client.get_weather(session_key))
-
-            results = await asyncio.gather(*coros)
-            idx = 0
-
-            raw_positions, intervals, locations = results[0], results[1], results[2]
-            idx = 3
-
-            if fetch_slow:
-                stints, laps, pit_stops = results[idx], results[idx + 1], results[idx + 2]
-                idx += 3
-                race_state.stints = stints
-                race_state.pit_stops = pit_stops
-                if laps:
-                    valid_laps = [l for l in laps if not l.get("is_deleted")]
-                    if valid_laps:
-                        race_state.lap_number = max(l["lap_number"] for l in valid_laps)
-                    race_state.sectors_by_driver = build_latest_sectors(laps)
-
-            if fetch_rc:
-                race_state.race_control = results[idx]
-                idx += 1
-
-            if fetch_weather:
-                weather = results[idx]
-                if weather:
-                    race_state.weather = latest_weather(weather)
-
-            race_state.normalized_positions = normalize_positions(raw_positions, race_state.drivers)
-            race_state.intervals = intervals
             if locations:
-                race_state.car_positions = build_car_positions(locations, race_state.drivers)
+                race_state.car_positions = build_car_positions(
+                    locations, race_state.drivers
+                )
+                broadcaster.push()
 
-            race_state.last_updated = datetime.now(timezone.utc)
-            tick += 1
+        except Exception as exc:
+            import time as _time
+            status = getattr(getattr(exc, "response", None), "status_code", None)
+            if status == 401:
+                now = _time.monotonic()
+                if now - last_401_log >= _401_LOG_EVERY:
+                    logger.warning("Track map: OpenF1 /location returned 401 — retrying")
+                    last_401_log = now
+            else:
+                logger.debug("Track map poll error: %s", exc)
 
-        except Exception:
-            logger.exception("Polling error — will retry in 2 s")
-
-        await asyncio.sleep(2)
+        await asyncio.sleep(POLL_INTERVAL)

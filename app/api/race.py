@@ -46,8 +46,11 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             data = await q.get()
             # Drain: if rapid updates queued up, send only the newest
-            while not q.empty():
-                data = q.get_nowait()
+            try:
+                while True:
+                    data = q.get_nowait()
+            except asyncio.QueueEmpty:
+                pass
             await websocket.send_json(data)
     except WebSocketDisconnect:
         pass

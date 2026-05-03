@@ -50,10 +50,9 @@ function buildRows(positions, intervals, tyres, sectors, pitStops, lapNumber, ca
 
     const gapStr = String(intervalMap[n]?.gap_to_leader ?? '').trim().toUpperCase()
     const isRaceLike = category === 'race' || category === 'sprint'
-    const lapsBehind = isRaceLike && sector?.lap_number != null && lapNumber != null
-      ? lapNumber - sector.lap_number
-      : 0
-    const isDnf = gapStr === 'DNF' || (isRaceLike && lapsBehind > 2)
+    // Only treat as DNF when FastF1 explicitly says so — never infer from lap count.
+    // Drivers that are lapped show "+X LAP(S)" which is valid racing status.
+    const isDnf = gapStr === 'DNF' || gapStr === 'RETIRED' || gapStr === 'DISQUALIFIED'
     const isPitting = !isDnf && (pitMap[n] === true)
 
     return { ...p, interval: intervalMap[n], tyre, tyreAge, tyreHistory: history, sector, isDnf, isPitting }
@@ -84,9 +83,9 @@ export default function TimingTower({ data }) {
   }
 
   const overallBest = {
-    s1:  minOf(rows, r => r.sector?.sector_1),
-    s2:  minOf(rows, r => r.sector?.sector_2),
-    s3:  minOf(rows, r => r.sector?.sector_3),
+    s1:  minOf(rows, r => r.sector?.best_sector_1),
+    s2:  minOf(rows, r => r.sector?.best_sector_2),
+    s3:  minOf(rows, r => r.sector?.best_sector_3),
     lap: minOf(rows, r => r.sector?.best_lap_time),
   }
 

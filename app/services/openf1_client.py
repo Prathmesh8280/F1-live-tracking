@@ -40,6 +40,17 @@ class OpenF1Client:
         resp.raise_for_status()
         return resp.json()
 
+    async def get_sessions_by_circuit(self, circuit_short_name: str, session_name: str = "Practice 1") -> list:
+        """Find historical sessions for a given circuit (for track outline fallback)."""
+        resp = await self._get(f"{BASE_URL}/sessions", params={
+            "circuit_short_name": circuit_short_name,
+            "session_name": session_name,
+        })
+        if resp.status_code in (401, 404):
+            return []
+        resp.raise_for_status()
+        return resp.json()
+
     async def get_positions(self, session_key: int):
         resp = await self._get(f"{BASE_URL}/position", params={"session_key": session_key})
         return _list_or_empty(resp)
@@ -81,7 +92,7 @@ class OpenF1Client:
 
     async def get_locations(
         self,
-        session_key: int,
+        session_key: int | str,
         driver_number: int | None = None,
         date_gte: str | None = None,
         date_lte: str | None = None,

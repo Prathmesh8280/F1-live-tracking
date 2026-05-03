@@ -16,12 +16,14 @@ class RaceState:
         self.sectors_by_driver: dict[int, dict] = {}
 
         self.track_outline: list[dict] = []
+        self.pitlane_outline: list[dict] = []
         self.sector_fractions: list[float] = []
         self.car_positions: dict[int, dict] = {}
 
         self.pit_stops: list[dict] = []
         self.weather: dict = {}
         self.race_control: list[dict] = []
+        self.track_status: str = ""
 
         self.session_type: Optional[str] = None
         self.total_laps: Optional[int] = None

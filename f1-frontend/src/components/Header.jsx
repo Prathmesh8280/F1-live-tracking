@@ -14,9 +14,15 @@ function isRaceLike(sessionType) {
   return s === 'race' || s === 'sprint'
 }
 
+function useIsStale(lastUpdated, thresholdMs = 30000) {
+  if (!lastUpdated) return false
+  return Date.now() - new Date(lastUpdated).getTime() > thresholdMs
+}
+
 export default function Header({ data }) {
   const label   = SESSION_LABELS[data.session_type] ?? data.session_type ?? 'RACE'
   const showLap = isRaceLike(data.session_type) && data.lap_number != null
+  const stale   = useIsStale(data.last_updated)
 
   return (
     <header className="header">
@@ -26,6 +32,9 @@ export default function Header({ data }) {
         <span className="session-tag">{label}</span>
       </div>
       <div className="header-right">
+        {stale && data.is_live && (
+          <span className="stale-badge" title="No data received in 30s">⚠ STALE</span>
+        )}
         {showLap && (
           <span className="lap-counter">LAP {data.lap_number}</span>
         )}

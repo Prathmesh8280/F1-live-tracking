@@ -82,31 +82,57 @@ const FLAG_COMPONENTS = {
 
 /* ── Banner logic ────────────────────────────────────────────────── */
 
-function getActiveBanner(messages) {
-  if (!messages?.length) return null
+// TrackStatus codes from F1 live feed:
+// 1=Clear, 2=Yellow, 3=SCDeploying, 4=SafetyCar, 5=Red, 6=VSCDeployed, 7=VSCEnding
+function getActiveBanner(messages, trackStatus) {
+  const sorted = messages?.length
+    ? [...messages].sort((a, b) => new Date(b.date) - new Date(a.date))
+    : []
+  const hasChequered = messages?.some(m => (m.flag ?? '').toUpperCase().trim() === 'CHEQUERED')
+  const ts = String(trackStatus ?? '')
 
-  const sorted = [...messages].sort((a, b) => new Date(b.date) - new Date(a.date))
+  // TrackStatus is the authoritative source — use it first
+  if (ts === '5') {
+    const msg = sorted.find(m => (m.flag ?? '').toUpperCase() === 'RED') ?? {}
+    return { type: 'red', label: 'RED FLAG', msg }
+  }
+  if (ts === '4' || ts === '3') {
+    const msg = sorted.find(m => (m.message ?? '').toUpperCase().includes('SAFETY CAR')) ?? {}
+    return { type: 'sc', label: 'SAFETY CAR', msg }
+  }
+  if (ts === '6') {
+    const msg = sorted.find(m => {
+      const t = (m.message ?? '').toUpperCase()
+      return t.includes('VIRTUAL SAFETY CAR') || t.includes('VSC')
+    }) ?? {}
+    return { type: 'vsc', label: 'VIRTUAL SC', msg }
+  }
+  if (ts === '7') {
+    return { type: 'vsc', label: 'VSC ENDING', msg: {} }
+  }
+  if (ts === '2') {
+    const msg = sorted.find(m => {
+      const f = (m.flag ?? '').toUpperCase().trim()
+      return f === 'YELLOW' || f === 'DOUBLE YELLOW'
+    }) ?? {}
+    return { type: 'yellow', label: 'YELLOW FLAG', msg }
+  }
 
+  if (!sorted.length) return null
+
+  // For yellow/green/chequered fall back to message-based detection newest-first
   for (const msg of sorted) {
-    const flag  = (msg.flag    ?? '').toUpperCase().trim()
-    const text  = (msg.message ?? '').toUpperCase()
-    const scope = (msg.scope   ?? '').toUpperCase()
-
+    const flag  = (msg.flag  ?? '').toUpperCase().trim()
+    const scope = (msg.scope ?? '').toUpperCase()
     if (scope === 'DRIVER') continue
 
-    if (flag === 'RED')
-      return { type: 'red',       label: 'RED FLAG',    msg }
-    if (flag === 'YELLOW')
-      return { type: 'yellow',    label: 'YELLOW FLAG', msg }
     if (flag === 'DOUBLE YELLOW')
       return { type: 'yellow',    label: 'DBL YELLOW',  msg }
-    if (text.includes('VIRTUAL SAFETY CAR') || text.includes('VSC DEPLOYED'))
-      return { type: 'vsc',       label: 'VIRTUAL SC',  msg }
-    if (text.includes('SAFETY CAR DEPLOYED') || text.includes('SAFETY CAR IN'))
-      return { type: 'sc',        label: 'SAFETY CAR',  msg }
+    if (flag === 'YELLOW')
+      return { type: 'yellow',    label: 'YELLOW FLAG', msg }
     if (flag === 'CHEQUERED')
       return { type: 'chequered', label: 'CHEQUERED',   msg }
-    if (flag === 'GREEN' || flag === 'CLEAR')
+    if ((flag === 'GREEN' || flag === 'CLEAR') && !hasChequered)
       return { type: 'green',     label: 'GREEN FLAG',  msg }
   }
 
@@ -118,8 +144,10 @@ function fmtTime(dateStr) {
   return new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 }
 
-export default function RaceBanner({ messages }) {
-  const state = getActiveBanner(messages)
+export default function RaceBanner({ messages, isLive, trackStatus }) {
+  const state = !isLive
+    ? { type: 'chequered', label: 'CHEQUERED', msg: messages?.[messages.length - 1] ?? {} }
+    : getActiveBanner(messages, trackStatus)
   if (!state) return null
 
   const FlagIcon = FLAG_COMPONENTS[state.type]
@@ -129,7 +157,6 @@ export default function RaceBanner({ messages }) {
       <FlagIcon />
       <span className="race-banner-badge">{state.label}</span>
       <span className="race-banner-text">{state.msg.message}</span>
-      <span className="race-banner-time">{fmtTime(state.msg.date)}</span>
     </div>
   )
 }

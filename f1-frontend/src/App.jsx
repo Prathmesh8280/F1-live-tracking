@@ -5,6 +5,7 @@ import RaceBanner from './components/RaceBanner'
 import SessionInfoBar from './components/SessionInfoBar'
 import TrackMap from './components/TrackMap'
 import TimingTower from './components/TimingTower'
+import ErrorBoundary from './components/ErrorBoundary'
 import { WS_BASE } from './config'
 
 const WS_URL = `${WS_BASE}/race/ws`
@@ -63,21 +64,29 @@ function App() {
   }
 
   return (
-    <div className="app">
-      <Header data={data} />
-      <div className="header-stripe" />
-      <div className="main-grid">
-        <div className="left-panel">
-          <TrackMap isLiveParent={data?.is_live} positions={data?.positions} />
-          <div className="panel-meta">
-            <SessionInfoBar data={data} />
-            <RaceBanner messages={data?.race_control} />
-            <WeatherStrip weather={data?.weather} />
+    <ErrorBoundary>
+      <div className="app">
+        <Header data={data} />
+        <div className="header-stripe" />
+        <div className="main-grid">
+          <div className="left-panel">
+            <div className="panel-meta">
+              <SessionInfoBar data={data} />
+              <RaceBanner messages={data?.race_control} isLive={data?.is_live} trackStatus={data?.track_status} />
+              <WeatherStrip weather={data?.weather} />
+            </div>
+            <TrackMap
+              isLive={data?.is_live}
+              positions={data?.positions}
+              trackOutline={data?.track_outline}
+              sectorFractions={data?.sector_fractions}
+              carPositions={data?.car_positions}
+            />
           </div>
+          <TimingTower data={data} />
         </div>
-        <TimingTower data={data} />
       </div>
-    </div>
+    </ErrorBoundary>
   )
 }
 

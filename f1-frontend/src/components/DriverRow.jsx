@@ -20,6 +20,7 @@ const TYRE_ABBR = {
   HARD:         'H',
   INTERMEDIATE: 'I',
   WET:          'W',
+  UNKNOWN:      '?',
 }
 
 function fmtTime(seconds) {
