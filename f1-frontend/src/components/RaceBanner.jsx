@@ -96,9 +96,14 @@ function getActiveBanner(messages, trackStatus) {
     const msg = sorted.find(m => (m.flag ?? '').toUpperCase() === 'RED') ?? {}
     return { type: 'red', label: 'RED FLAG', msg }
   }
-  if (ts === '4' || ts === '3') {
+  if (ts === '4') {
     const msg = sorted.find(m => (m.message ?? '').toUpperCase().includes('SAFETY CAR')) ?? {}
     return { type: 'sc', label: 'SAFETY CAR', msg }
+  }
+  if (ts === '3') {
+    // SC dispatched but not yet on track — distinct label so it's not misleading
+    const msg = sorted.find(m => (m.message ?? '').toUpperCase().includes('SAFETY CAR')) ?? {}
+    return { type: 'sc', label: 'SC DEPLOYED', msg }
   }
   if (ts === '6') {
     const msg = sorted.find(m => {
@@ -120,12 +125,17 @@ function getActiveBanner(messages, trackStatus) {
 
   if (!sorted.length) return null
 
-  // For yellow/green/chequered fall back to message-based detection newest-first
+  // Message-based fallback — covers latency gaps where trackStatus hasn't updated yet
   for (const msg of sorted) {
-    const flag  = (msg.flag  ?? '').toUpperCase().trim()
-    const scope = (msg.scope ?? '').toUpperCase()
+    const flag  = (msg.flag    ?? '').toUpperCase().trim()
+    const scope = (msg.scope   ?? '').toUpperCase()
+    const text  = (msg.message ?? '').toUpperCase()
     if (scope === 'DRIVER') continue
 
+    if (text.includes('VIRTUAL SAFETY CAR') || text.includes('VSC'))
+      return { type: 'vsc',       label: 'VIRTUAL SC',  msg }
+    if (text.includes('SAFETY CAR'))
+      return { type: 'sc',        label: 'SAFETY CAR',  msg }
     if (flag === 'DOUBLE YELLOW')
       return { type: 'yellow',    label: 'DBL YELLOW',  msg }
     if (flag === 'YELLOW')
@@ -146,7 +156,7 @@ function fmtTime(dateStr) {
 
 export default function RaceBanner({ messages, isLive, trackStatus }) {
   const state = !isLive
-    ? { type: 'chequered', label: 'CHEQUERED', msg: messages?.[messages.length - 1] ?? {} }
+    ? { type: 'chequered', label: 'CHEQUERED', msg: {} }
     : getActiveBanner(messages, trackStatus)
   if (!state) return null
 
